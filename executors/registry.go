@@ -9,6 +9,7 @@ import (
 	"github.com/ovh/venom/executors/http"
 	"github.com/ovh/venom/executors/imap"
 	"github.com/ovh/venom/executors/kafka"
+	"github.com/ovh/venom/executors/kubernetes"
 	"github.com/ovh/venom/executors/mongo"
 	"github.com/ovh/venom/executors/mqtt"
 	"github.com/ovh/venom/executors/ovhapi"
@@ -42,4 +43,5 @@ var Registry map[string]Constructor = map[string]Constructor{
 	ssh.Name:        ssh.New,
 	mongo.Name:      mongo.New,
 	web.Name:        web.New,
+	kubernetes.Name: kubernetes.New,
 }

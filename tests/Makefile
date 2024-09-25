@@ -53,6 +53,11 @@ venom-qpid.cid:
 venom-grpc.cid:
 	docker build -t venom-grpc-greeter ./grpc
 	$(call docker_run,venom-grpc-greeter,grpc,-p 50051:50051)
+venom-kubernetes.cid:
+	go install sigs.k8s.io/kind@v0.24.0
+	kind create cluster --name venom --config=./kubernetes/kind-config.yaml --kubeconfig=./kubernetes/kubeconfig.yaml
+stop-venom-kubernetes.cid:
+	kind delete cluster --name venom
 
 start-test-stack: venom-postgres.cid
 start-test-stack: venom-mysql.cid
@@ -62,10 +67,13 @@ start-test-stack: venom-imap.cid
 start-test-stack: venom-kafka.cid
 start-test-stack: venom-rabbit.cid
 start-test-stack: venom-sshd.cid
+start-test-stack: venom-kubernetes.cid
 start-test-stack: venom-mqtt.cid
 start-test-stack: venom-qpid.cid
 start-test-stack: $(PKI_DIR)
 start-test-stack: venom-grpc.cid
+
+stop-test-stack: stop-venom-kubernetes.cid
 
 stop-test-stack:
 	@for f in `ls -1 *.cid`; do docker stop `cat $${f}`; docker rm `cat $${f}`; done; rm -f *.cid; docker network rm $(docker-network)
@@ -80,8 +88,12 @@ build-test-binary-docker:
 
 run-test: generate-venom-pki
 	VENOM_VAR_MY_ENVAR=foo  ./venom_wrapper.sh run \
-	-vv --format=xml --output-dir=. --html-report --lib-dir=./lib_custom --var='array_from_var=["biz","buz"]' --var-from-file ./kafka/testVariables.yml --var-from-file=$(PKI_VAR_FILE) --var-from-file ./vars/vars.yml ./*.yml ./assertions/*.yml && \
+	-vv --format=xml --output-dir=. --html-report --lib-dir=./lib_custom --var='array_from_var=["biz","buz"]' --var-from-file ./kafka/testVariables.yml --var-from-file ./kubernetes/testVariables.yml --var-from-file=$(PKI_VAR_FILE) --var-from-file ./vars/vars.yml ./*.yml ./assertions/*.yml && \
 	(cd ./vars_override && VENOM_VAR_foo=from-env VENOM_VAR_FOO2=from-env2 VENOM_VAR_FOO3=from-env3 ../venom_wrapper.sh run -vv --format=xml --output-dir=. --var foo='from-cmd-arg' --var='array_from_var=["biz","buz"]' ./mytc.yml);
+
+run-k-test:
+	./venom_wrapper.sh run \
+	-vv --format=xml --output-dir=. --html-report --lib-dir=./lib_custom --var-from-file ./kubernetes/testVariables.yml --var-from-file ./vars/vars.yml ./kubernetes.yml
 
 .PHONY: wait-for-kafka
 wait-for-kafka:

@@ -1,0 +1,86 @@
+name: Kubernetes testsuite
+testcases:
+- name: kubernetes version
+  steps:
+  - type: kubernetes
+    ConfigFilePath: '{{.k8sClusterConfigPath}}'
+    method: version
+    assertions:
+    - result.bodyjson.gitVersion ShouldEqual "v1.31.0"
+- name: kubernetes get nodes
+  steps:
+  - type: kubernetes
+    ConfigFilePath: '{{.k8sClusterConfigPath}}'
+    method: get
+    resource: nodes
+    assertions:
+    - result.bodyjson.items ShouldHaveLength 2
+    - result.bodyjson.items.items0.metadata.labels ShouldContainKey "k8s.hetzner.cloud/cluster-id"
+- name: kubernetes get namespaces
+  steps:
+  - type: kubernetes
+    ConfigFilePath: '{{.k8sClusterConfigPath}}'
+    method: get
+    resource: namespaces
+    assertions:
+    - result.bodyjson.items ShouldHaveLength 5
+    info: "There should be 5 namespaces"
+- name: kubernetes get pods
+  steps:
+  - type: kubernetes
+    ConfigFilePath: '{{.k8sClusterConfigPath}}'
+    method: get
+    resource: pods
+    assertions:
+    - result.bodyjson.items ShouldHaveLength 11
+    info: "There should be 11 pods "
+- name: kubernetes get pods
+  steps:
+  - type: kubernetes
+    ConfigFilePath: '{{.k8sClusterConfigPath}}'
+    method: get
+    resource: pods
+    namespace: kube-system
+    assertions:
+    - result.bodyjson.items ShouldHaveLength 10
+    info: "There should be 10 pods "
+- name: kubernetes get specific resource
+  steps:
+  - type: kubernetes
+    ConfigFilePath: '{{.k8sClusterConfigPath}}'
+    method: get
+    resource: configmaps
+    namespace: kube-public
+    entryname: kube-root-ca.crt
+    assertions:
+    - result.bodyjson.data ShouldHaveLength 1
+    info: There should be 1 entries in configmap 
+- name: create and delete configmap
+  steps:
+  - type: kubernetes
+    ConfigFilePath: '{{.k8sClusterConfigPath}}'
+    method: create
+    resource: configmaps
+    namespace: kube-public
+    data: '{ "kind": "ConfigMap","apiVersion":"v1","metadata": {"name":"test-entry"},"data": {"key1": "value1", "key2": "value2"}}'
+    assertions:
+    - result.bodyjson.data ShouldNotBeEmpty
+    - result.code ShouldEqual 201
+  - type: kubernetes
+    ConfigFilePath: '{{.k8sClusterConfigPath}}'
+    method: delete
+    resource: configmaps
+    namespace: kube-public
+    entryname: test-entry
+    assertions:
+    - result.bodyjson.status ShouldEqual "Success"
+    - result.code ShouldEqual 200
+  - type: kubernetes
+    ConfigFilePath: '{{.k8sClusterConfigPath}}'
+    method: get
+    resource: configmaps
+    namespace: kube-public
+    entryname: test-entry
+    assertions:
+    - result.code ShouldEqual 404
+    info: There should be no entries
