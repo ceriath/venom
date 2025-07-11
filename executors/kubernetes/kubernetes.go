@@ -35,6 +35,7 @@ type Executor struct {
 	EntryName      string `json:"entryname" yaml:"entryname"`
 	Data           string `json:"data" yaml:"data"`
 	ConfigFilePath string `json:"configfilepath" yaml:"configfilepath"`
+	LabelSelector  string `json:"labelselector" yaml:"labelselector"`
 }
 
 // Result represents a step result
@@ -67,11 +68,16 @@ func (Executor) Run(ctx context.Context, step venom.TestStep) (interface{}, erro
 	case "get":
 		var res runtime.Object
 		var err error
+		req := clientset.CoreV1().RESTClient().Get().Namespace(e.Namespace).Resource(e.Resource)
 		if e.EntryName != "" {
-			res, err = clientset.CoreV1().RESTClient().Get().Namespace(e.Namespace).Resource(e.Resource).Name(e.EntryName).Do(ctx).StatusCode(resultCode).Get()
-		} else {
-			res, err = clientset.CoreV1().RESTClient().Get().Namespace(e.Namespace).Resource(e.Resource).Do(ctx).StatusCode(resultCode).Get()
+			req = req.Name(e.EntryName)
 		}
+		if e.LabelSelector != "" {
+			req = req.Param("labelSelector", e.LabelSelector)
+		}
+
+		res, err = req.Do(ctx).StatusCode(resultCode).Get()
+
 		if err != nil && *resultCode != 404 {
 			return nil, err
 		}

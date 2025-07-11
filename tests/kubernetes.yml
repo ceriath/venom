@@ -44,6 +44,17 @@ testcases:
     assertions:
     - result.bodyjson.items ShouldHaveLength 10
     info: "There should be 10 pods "
+- name: kubernetes get pods by label selector
+  steps:
+  - type: kubernetes
+    ConfigFilePath: '{{.k8sClusterConfigPath}}'
+    method: get
+    resource: pods
+    namespace: kube-system
+    labelselector: k8s-app=kube-proxy
+    assertions:
+    - result.bodyjson.items ShouldHaveLength 2
+    info: "There should be 2 pods labeled with 'k8s-app=kube-proxy'"
 - name: kubernetes get specific resource
   steps:
   - type: kubernetes
